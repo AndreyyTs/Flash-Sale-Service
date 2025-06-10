@@ -246,7 +246,7 @@ Every hour the service automatically:
 
 ## Performance Metrics 📊
 
-![Dashboard](/assets/image_RU.png)
+![Dashboard](/assets/image.png)
 
 ### Real HTTP Throughput
 **Test Environment**: Home PC with AMD Ryzen 5 8400F 6-Core Processor (Ubuntu)
