@@ -1,31 +1,41 @@
-# Flash Sale Service 🏆⚡
+# Flash Sale Service 🏆⚡  
 
-High-performance microservice for flash sales, specially designed for [NOT Back Contest](https://contest.notco.in/dev-backend). Implements a reliable system capable of selling exactly 10,000 items every hour with atomic operations, zero-downtime restarts, and enterprise-grade reliability.
+A high-performance microservice for flash sales, specifically designed for the [NOT Back Contest](https://contest.notco.in/dev-backend). Implements a reliable system capable of selling exactly **10,000 items per hour** with atomic operations, zero-downtime restarts, and enterprise-grade reliability.  
 
-**🏆 Built for NOT Back Contest**: Backend developer competition requiring participants to create a complete flash sale service from scratch using Go, Redis, Postgres, and Docker — without frameworks and with minimal dependencies.
+**🏆 Built for NOT Back Contest**: A backend developer competition requiring participants to build a complete flash sale system from scratch using **Go, Redis, Postgres, and Docker**—with no frameworks and minimal dependencies.  
 
-## Simple Architecture 🎯
+## Simple Yet Powerful Architecture 🎯  
 
-This service is designed with emphasis on **simplicity and performance**:
+This service is designed with **simplicity and performance** in mind:  
 
-- **Single PostgreSQL database** - One database handles all persistent storage (scalable)
-- **Single Go service instance** - One application instance handles all requests
-- **Minimal dependencies** - Clean Go with only necessary libraries
-- **Clean design** - Easy to understand, deploy, and maintain
-- **High concurrency** - Single instance can efficiently handle multiple concurrent clients
+- **Single PostgreSQL Database** – One database handles all persistent storage (scalable if needed)  
+- **Single Go Service Instance** – One application instance efficiently handles all requests  
+- **Minimal Dependencies** – Pure Go with only essential libraries  
+- **Clean Design** – Easy to understand, deploy, and maintain  
+- **Extreme Performance** –  **90,000+ RPS** and can sell all 10,000 items in **under 1 second**  
 
-The architecture intentionally avoids complex distributed system patterns in favor of a simple single-node design that easily meets contest requirements. A single service instance can handle requests from multiple clients and services simultaneously through efficient concurrent processing.
+The architecture intentionally avoids complex distributed systems patterns in favor of a simple single-node design that easily meets contest requirements. A single service instance efficiently processes requests from multiple clients and services through highly concurrent processing.  
 
-## Completed Key Requirements ✅
+## Key Features & Achievements ✅  
 
-- ✅ **Exactly 10,000 items per hour** - Automatic hourly restarts with fresh inventory
-- ✅ **Zero-downtime deployments** - Graceful shutdown with request draining
-- ✅ **Atomic operations** - Reservations and purchases without race conditions
-- ✅ **High concurrency** - Thread-safe operations with 17M+ ops/sec performance
-- ✅ **Persistent data storage** - Full database integration and recovery
-- ✅ **User limits** - Configurable purchase restrictions
-- ✅ **Minimal dependencies** - Clean Go with only necessary libraries
-- ✅ **High concurrency handling** - Single instance efficiently serves multiple clients
+- ✅ **Exactly 10,000 Items per Hour** – Automatic hourly restocks with fresh inventory  
+- ✅ **Zero-Downtime Deployments** – Graceful shutdown with request draining  
+- ✅ **Atomic Operations** – Race-free reservations and purchases  
+- ✅ **Extreme Performance** – **90,000+ RPS**, sells out entire stock in milliseconds  
+- ✅ **Persistent Storage** – Full database integration and recovery  
+- ✅ **User Limits** – Configurable purchase restrictions  
+- ✅ **Minimal Dependencies** – Pure Go with only essential libraries  
+- ✅ **High Concurrency** – Single instance efficiently serves thousands of clients  
+
+## Blazing-Fast Speed ⚡  
+
+The service delivers **exceptional performance**:  
+- **90,000+ requests per second** on standard hardware  
+- **Sells out 10,000 items in under 1 second**  
+- **Atomic operations** without performance loss  
+- **Linear scalability** with increased resources  
+
+This speed is achieved through **optimized Go code** low-overhead architecture.
 
 ## Architecture Overview 🏗️
 
@@ -622,7 +632,7 @@ docker system prune -af --volumes
 - **Атомарные операции** без потери производительности
 - **Линейное масштабирование** при увеличении ресурсов
 
-Такая скорость достигается за счет оптимизированного кода на Go, эффективного использования Redis для атомарных операций и минимальных накладных расходов архитектуры.
+Такая скорость достигается за счет оптимизированного кода на Go.
 
 ## Обзор Архитектуры 🏗️
 
