@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: myapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d myapp"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 20G
+    networks:
+      - app_network
+
+  app:
+    build: .
+    container_name: go_app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+    ulimits:
+      nofile:
+        soft: 100000
+        hard: 100000
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 8G
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
