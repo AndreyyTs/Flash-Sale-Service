@@ -1,6 +1,6 @@
 # Flash Sale Service 🏆⚡  
 
-A high-performance microservice for flash sales, specifically designed for the [NOT Back Contest](https://contest.notco.in/dev-backend). Implements a reliable system capable of selling exactly **10,000 items per hour** with atomic operations, zero-downtime restarts, and enterprise-grade reliability.  
+A high-performance microservice for flash sales, specifically designed for the [NOT Back Contest](https://contest.notco.in/dev-backend). Implements a reliable system capable of selling exactly **10 000 items per hour** with atomic operations, zero-downtime restarts, and enterprise-grade reliability.  
 
 **🏆 Built for NOT Back Contest**: A backend developer competition requiring participants to build a complete flash sale system from scratch using **Go, Redis, Postgres, and Docker**—with no frameworks and minimal dependencies.  
 
@@ -12,16 +12,16 @@ This service is designed with **simplicity and performance** in mind:
 - **Single Go Service Instance** – One application instance efficiently handles all requests  
 - **Minimal Dependencies** – Pure Go with only essential libraries  
 - **Clean Design** – Easy to understand, deploy, and maintain  
-- **Extreme Performance** –  **90,000+ RPS** and can sell all 10,000 items in **under 1 second**  
+- **Extreme Performance** –  **90 000+ RPS** and can sell all 10,000 items in **under 1 second**  
 
 The architecture intentionally avoids complex distributed systems patterns in favor of a simple single-node design that easily meets contest requirements. A single service instance efficiently processes requests from multiple clients and services through highly concurrent processing.  
 
 ## Key Features & Achievements ✅  
 
-- ✅ **Exactly 10,000 Items per Hour** – Automatic hourly restocks with fresh inventory  
+- ✅ **Exactly 10 000 Items per Hour** – Automatic hourly restocks with fresh inventory  
 - ✅ **Zero-Downtime Deployments** – Graceful shutdown with request draining  
 - ✅ **Atomic Operations** – Race-free reservations and purchases  
-- ✅ **Extreme Performance** – **90,000+ RPS**, sells out entire stock in milliseconds  
+- ✅ **Extreme Performance** – **90 000+ RPS**, sells out entire stock in milliseconds  
 - ✅ **Persistent Storage** – Full database integration and recovery  
 - ✅ **User Limits** – Configurable purchase restrictions  
 - ✅ **Minimal Dependencies** – Pure Go with only essential libraries  
@@ -30,7 +30,7 @@ The architecture intentionally avoids complex distributed systems patterns in fa
 ## Blazing-Fast Speed ⚡  
 
 The service delivers **exceptional performance**:  
-- **90,000+ requests per second** on standard hardware  
+- **90 000+ requests per second** on standard hardware  
 - **Sells out 10,000 items in under 1 second**  
 - **Atomic operations** without performance loss  
 - **Linear scalability** with increased resources  
@@ -256,11 +256,15 @@ Every hour the service automatically:
 
 ## Performance Metrics 📊
 
-![Dashboard](/assets/image.png)
+*Checkout only test*
+![Dashboard](/assets/image_new_2.png)
+
+*Mixed checkout and purchase test*
+![Dashboard](/assets/image_new_1.png)
 
 ### Real HTTP Throughput
 **Test Environment**: Home PC with AMD Ryzen 5 8400F 6-Core Processor (Ubuntu)
-- **HTTP requests**: **~20,000 RPS** sustained throughput
+- **HTTP requests**: **90 000+ RPS** sustained throughput
 - **End-to-end latency**: <50ms including database persistence
 - **Concurrent users**: 10000+ simultaneous connections
 - **Memory usage**: <100MB at peak load
@@ -591,13 +595,13 @@ docker system prune -af --volumes
 
 ---
 
-**🏆 Created specifically for [NOT Back Contest](https://contest.notco.in/dev-backend) - demonstrates enterprise-grade flash sale architecture with atomic operations, zero-downtime deployments, and 20,000+ RPS performance on a single node.**
+**🏆 Created specifically for [NOT Back Contest](https://contest.notco.in/dev-backend) - demonstrates enterprise-grade flash sale architecture with atomic operations, zero-downtime deployments, and 90 000+ RPS performance on a single node.**
 
 ----
 
 # Сервис Flash Sale 🏆⚡
 
-Высокопроизводительный микросервис для flash-распродаж, специально разработанный для [NOT Back Contest](https://contest.notco.in/dev-backend). Реализует надежную систему, способную продавать ровно 10,000 товаров каждый час с атомарными операциями, перезапусками без простоя и надежностью корпоративного уровня.
+Высокопроизводительный микросервис для flash-распродаж, специально разработанный для [NOT Back Contest](https://contest.notco.in/dev-backend). Реализует надежную систему, способную продавать ровно 10 000 товаров каждый час с атомарными операциями, перезапусками без простоя и надежностью корпоративного уровня.
 
 **🏆 Создан для NOT Back Contest**: Соревнование backend-разработчиков, требующее от участников создать полный сервис flash-распродаж с нуля, используя Go, Redis, Postgres и Docker — без фреймворков и с минимальными зависимостями.
 
@@ -609,16 +613,16 @@ docker system prune -af --volumes
 - **Единственный экземпляр Go сервиса** - Один экземпляр приложения обрабатывает все запросы
 - **Минимальные зависимости** - Чистый Go с только необходимыми библиотеками
 - **Чистый дизайн** - Легко понять, развернуть и поддерживать
-- **Экстремальная производительность** - Способен обрабатывать 90,000+ запросов в секунду и продать все 10,000 товаров менее чем за 1 секунду
+- **Экстремальная производительность** - Способен обрабатывать 90 000+ запросов в секунду и продать все 10 000 товаров менее чем за 1 секунду
 
 Архитектура намеренно избегает сложных паттернов распределенных систем в пользу простого однонодового дизайна, который легко соответствует требованиям конкурса. Единственный экземпляр сервиса может обрабатывать запросы от множественных клиентов и сервисов одновременно через эффективную конкурентную обработку.
 
 ## Выполненные Ключевые Требования ✅
 
-- ✅ **Ровно 10,000 товаров в час** - Автоматические ежечасные перезапуски со свежим инвентарем
+- ✅ **Ровно 10 000 товаров в час** - Автоматические ежечасные перезапуски со свежим инвентарем
 - ✅ **Развертывания без простоя** - Плавное отключение с дренажом запросов
 - ✅ **Атомарные операции** - Резервирования и покупки без состояний гонки
-- ✅ **Экстремальная производительность** - 90,000+ RPS, возможность продать весь инвентарь за доли секунды
+- ✅ **Экстремальная производительность** - 90 000+ RPS, возможность продать весь инвентарь за доли секунды
 - ✅ **Постоянное хранение данных** - Полная интеграция с базой данных и восстановление
 - ✅ **Ограничения пользователей** - Конфигурируемые ограничения покупок
 - ✅ **Минимальные зависимости** - Чистый Go с только необходимыми библиотеками
@@ -627,8 +631,8 @@ docker system prune -af --volumes
 ## Невероятная Скорость ⚡
 
 Сервис демонстрирует выдающуюся производительность:
-- **90,000+ запросов в секунду** на стандартном оборудовании
-- **Менее 1 секунды** для полной продажи всего инвентаря (10,000 товаров)
+- **90 000+ запросов в секунду** на стандартном оборудовании
+- **Менее 1 секунды** для полной продажи всего инвентаря (10 000 товаров)
 - **Атомарные операции** без потери производительности
 - **Линейное масштабирование** при увеличении ресурсов
 
@@ -856,11 +860,15 @@ curl -X POST "http://localhost:8080/purchase?code=550e8400-e29b-41d4-a716-446655
 
 ## Метрики производительности 📊
 
-![Dashboard](/assets/image_RU.png)
+*Нагрузка только checkout*
+![Dashboard](/assets/image_new_2.png)
+
+*Смешанная нагрузка checkout и purchase*
+![Dashboard](/assets/image_new_1.png)
 
 ### Реальная пропускная способность HTTP
 **Тестовая среда**: Домашний ПК с AMD Ryzen 5 8400F 6-Core Processor (Ubuntu)
-- **HTTP запросы**: **~20,000 RPS** устойчивая пропускная способность
+- **HTTP запросы**: **90 000+ RPS** устойчивая пропускная способность
 - **End-to-end задержка**: <50мс включая персистентность в базу данных
 - **Одновременные пользователи**: 10000+ одновременных подключений
 - **Использование памяти**: <100МБ при пиковой нагрузке
@@ -1197,4 +1205,4 @@ docker system prune -af --volumes
 
 ---
 
-**🏆 Создано специально для [NOT Back Contest](https://contest.notco.in/dev-backend) - демонстрирует архитектуру flash-продаж корпоративного уровня с атомарными операциями, развертываниями без простоя и производительностью 20,000+ RPS на одном узле.**
+**🏆 Создано специально для [NOT Back Contest](https://contest.notco.in/dev-backend) - демонстрирует архитектуру flash-продаж корпоративного уровня с атомарными операциями, развертываниями без простоя и производительностью 90 000+ RPS на одном узле.**
