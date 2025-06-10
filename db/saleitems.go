@@ -585,15 +585,15 @@ func (s *CacheRecoveryService) RecoverCache(ctx context.Context, cache *megacach
 	}
 
 	// 3. Очищаем истекшие резервации из БД
-	cleaned, err := s.checkoutRepo.CleanupExpiredReservations(ctx)
-	if err != nil {
-		return fmt.Errorf("cleanup expired reservations: %w", err)
-	}
+	// cleaned, err := s.checkoutRepo.CleanupExpiredReservations(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("cleanup expired reservations: %w", err)
+	// }
 
 	// cache.
 
-	fmt.Printf("Cache recovery completed: loaded %d reservations, %d users, cleaned %d expired\n",
-		len(reservations), len(userData), cleaned)
+	// fmt.Printf("Cache recovery completed: loaded %d reservations, %d users, cleaned %d expired\n",
+	// 	len(reservations), len(userData), cleaned)
 
 	return nil
 }

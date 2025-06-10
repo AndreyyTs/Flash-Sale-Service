@@ -432,34 +432,34 @@ func (r *CheckoutRepository) GetActiveReservations(ctx context.Context) ([]Check
 	return reservations, nil
 }
 
-// CleanupExpiredReservations удаляет истекшие резервации из БД
-func (r *CheckoutRepository) CleanupExpiredReservations(ctx context.Context) (int64, error) {
-	query := `DELETE FROM checkouts WHERE expires_at <= NOW()`
+// // CleanupExpiredReservations удаляет истекшие резервации из БД
+// func (r *CheckoutRepository) CleanupExpiredReservations(ctx context.Context) (int64, error) {
+// 	query := `DELETE FROM checkouts WHERE expires_at <= NOW()`
 
-	result, err := r.db.ExecContext(ctx, query)
-	if err != nil {
-		return 0, fmt.Errorf("cleanup expired reservations: %w", err)
-	}
+// 	result, err := r.db.ExecContext(ctx, query)
+// 	if err != nil {
+// 		return 0, fmt.Errorf("cleanup expired reservations: %w", err)
+// 	}
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("get rows affected: %w", err)
-	}
+// 	affected, err := result.RowsAffected()
+// 	if err != nil {
+// 		return 0, fmt.Errorf("get rows affected: %w", err)
+// 	}
 
-	return affected, nil
-}
+// 	return affected, nil
+// }
 
-// DeleteReservation удаляет конкретную резервацию
-func (r *CheckoutRepository) DeleteReservation(ctx context.Context, code uuid.UUID) error {
-	query := `DELETE FROM checkouts WHERE code = $1`
+// // DeleteReservation удаляет конкретную резервацию
+// func (r *CheckoutRepository) DeleteReservation(ctx context.Context, code uuid.UUID) error {
+// 	query := `DELETE FROM checkouts WHERE code = $1`
 
-	_, err := r.db.ExecContext(ctx, query, code)
-	if err != nil {
-		return fmt.Errorf("delete reservation: %w", err)
-	}
+// 	_, err := r.db.ExecContext(ctx, query, code)
+// 	if err != nil {
+// 		return fmt.Errorf("delete reservation: %w", err)
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // GetReservationByCode получает резервацию по коду
 func (r *CheckoutRepository) GetReservationByCode(ctx context.Context, code uuid.UUID) (*CheckoutRecord, error) {
