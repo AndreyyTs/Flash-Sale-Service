@@ -351,7 +351,7 @@ func (lt *LoadTester) handleDashboard(w http.ResponseWriter, r *http.Request) {
             data: {
                 datasets: [
                     {
-                        label: '✅ Success (200)',
+                        label: '✅ Success (200 + 409)',
                         data: [],
                         borderColor: 'rgb(34, 197, 94)',
                         backgroundColor: 'rgba(34, 197, 94, 0.1)',

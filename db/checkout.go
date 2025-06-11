@@ -285,10 +285,13 @@ func (bi *BatchInserter) Add(record CheckoutRecord) error {
 	// Ждем результата
 	select {
 	case err := <-resultChan:
+		// fmt.Println("qwe", err)
 		return err
 	case <-bi.ctx.Done():
 		return bi.ctx.Err()
 	}
+
+	// return <-resultChan
 }
 
 // stopTimer безопасно останавливает таймер
@@ -333,6 +336,7 @@ func (bi *BatchInserter) performFlush() {
 
 	// Выполняем вставку
 	err := bi.repo.MultiRowInsert(bi.ctx, records)
+	// fmt.Println("err := bi.repo.MultiRowInsert(bi.ctx, records)", err)
 
 	// Отправляем результат всем ожидающим
 	for _, pr := range pendingRecords {

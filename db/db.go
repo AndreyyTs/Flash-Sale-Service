@@ -531,15 +531,22 @@ func (s *Server) ExecContext(ctx context.Context, query string, args ...interfac
 	}
 
 	result, err := db.ExecContext(ctx, query, args...)
-	if err != nil && isConnectionError(err) {
-		log.Printf("❌ Connection error detected, attempting reconnect: %v", err)
-		if reconnectErr := s.reconnect(); reconnectErr == nil {
-			// Повторяем запрос после переподключения
-			db = s.DB()
-			if db != nil {
-				return db.ExecContext(ctx, query, args...)
-			}
-		}
+
+	// TODO сделать ретрай нормалоьтно с возвратом ошибки
+
+	// if err != nil && isConnectionError(err) {
+	// 	log.Printf("❌ Connection error detected, attempting reconnect: %v", err)
+	// 	if reconnectErr := s.reconnect(); reconnectErr == nil {
+	// 		// Повторяем запрос после переподключения
+	// 		db = s.DB()
+	// 		if db != nil {
+	// 			return db.ExecContext(ctx, query, args...)
+	// 		}
+	// 	}
+	// }
+
+	if err != nil {
+		return result, err
 	}
 
 	return result, err
