@@ -16,105 +16,117 @@ import (
 	"github.com/google/uuid"
 )
 
+// ServerInstance represents a single server instance with all its dependencies / представляет один экземпляр сервера со всеми его зависимостями
 type ServerInstance struct {
-	server           *db.Server
-	checkoutRepo     *db.CheckoutRepository
-	batchInserter    *db.BatchInserter
-	saleItemsRepo    *db.SaleItemsRepository
-	batchPurchase    *db.BatchPurchaseUpdater
-	cache            *megacache.Megacache
-	saleID           int64
-	httpServer       *http.Server
-	isAcceptingReqs  int32 // atomic boolean
-	shutdownComplete chan struct{}
-	dbHost           string
+	server           *db.Server               // Database server connection / Подключение к серверу базы данных
+	checkoutRepo     *db.CheckoutRepository   // Repository for checkout operations / Репозиторий для операций checkout
+	batchInserter    *db.BatchInserter        // Batch inserter for performance / Пакетная вставка для производительности
+	saleItemsRepo    *db.SaleItemsRepository  // Repository for sale items / Репозиторий для товаров в продаже
+	batchPurchase    *db.BatchPurchaseUpdater // Batch purchase updater / Пакетное обновление покупок
+	cache            *megacache.Megacache     // Local cache for fast operations / Локальный кеш для быстрых операций
+	saleID           int64                    // Current sale ID / ID текущей распродажи
+	httpServer       *http.Server             // HTTP server instance / Экземпляр HTTP сервера
+	isAcceptingReqs  int32                    // Atomic boolean for request acceptance / Атомарный флаг приема запросов
+	shutdownComplete chan struct{}            // Channel to signal shutdown completion / Канал для сигнала завершения остановки
+	dbHost           string                   // Database host address / Адрес хоста базы данных
 }
 
+// Initialize timezone to UTC for consistent time handling / Инициализация временной зоны в UTC для консистентной работы с временем
 func init() {
 	time.Local = time.UTC
 }
 
 var (
-	currentInstance atomic.Value // *ServerInstance
+	currentInstance atomic.Value // *ServerInstance - Current active server instance / Текущий активный экземпляр сервера
 )
 
+// Global database host variable / Глобальная переменная хоста базы данных
 var dbHost string
 
+// Main function - entry point of the application / точка входа в приложение
 func main() {
+	// Get database host from environment variable or use default / Получение хоста базы данных из переменной окружения или использование значения по умолчанию
 	dbHost = os.Getenv("DB_HOST")
 	if dbHost == "" {
 		dbHost = "localhost"
 	}
 
-	// Запускаем первый экземпляр сервера
+	// Start the first server instance / Запускаем первый экземпляр сервера
 	if err := startNewServerInstance(); err != nil {
 		log.Fatalf("❌ Failed to start initial server instance: %v", err)
 	}
 
-	// Настраиваем таймер для перезапуска каждый час
+	// Setup timer for hourly restarts /  Настраиваем таймер для перезапуска каждый час
 	setupHourlyRestart()
 
-	// Блокируем main goroutine
+	// Block main goroutine indefinitely / Блокируем main goroutine
 	select {}
 }
 
+// startNewServerInstance creates and starts a new server instance / создает и запускает новый экземпляр сервера
 func startNewServerInstance() error {
 	log.Println("🚀 Starting new server instance...")
 
-	// Инициализация глобального сервера БД
+	// Initialize global database server / Инициализация глобального сервера БД
 	config := db.DefaultConfig()
 	config.Host = dbHost
 	if err := db.InitGlobalServer(config); err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	// Создаем новый экземпляр сервера
+	// Create new server instance / Создаем новый экземпляр сервера
 	instance := &ServerInstance{
 		shutdownComplete: make(chan struct{}),
 	}
 
 	var err error
 
-	// Инициализация БД компонентов
+	// Initialize database components / Инициализация БД компонентов
 	instance.server = db.GetGlobalServer()
 	if instance.server == nil {
 		return fmt.Errorf("server is nil")
 	}
 
+	// Create initial sale record / Создание записи начальной распродажи
 	instance.saleID, err = instance.server.CreateInitialSale()
 	if err != nil {
 		return fmt.Errorf("failed to create initial sale: %w", err)
 	}
 
-	// Создаем репозиторий checkout
+	// Create checkout repository / Создаем репозиторий checkout
 	instance.checkoutRepo, err = db.NewCheckoutRepository(instance.server)
 	if err != nil {
 		return fmt.Errorf("failed to create checkout repository: %w", err)
 	}
 
+	// Initialize batch inserter with 100 batch size and 50ms flush interval / Инициализация пакетной вставки с размером пакета 100 и интервалом сброса 50мс
 	instance.batchInserter = db.NewBatchInserter(instance.checkoutRepo, 100, 50*time.Millisecond)
 
+	// Create sale items repository / Создание репозитория товаров в продаже
 	instance.saleItemsRepo, err = db.NewSaleItemsRepository(instance.server)
 	if err != nil {
 		instance.cleanup()
 		return fmt.Errorf("failed to create sale items repository: %w", err)
 	}
 
+	// Initialize batch purchase updater with 10 batch size and 10ms flush interval / Инициализация пакетного обновления покупок с размером пакета 10 и интервалом сброса 10мс
 	instance.batchPurchase = db.NewBatchPurchaseUpdater(instance.saleItemsRepo, 10, 10*time.Millisecond)
 
-	// Инициализация локального кеша
-	instance.cache = megacache.NewMegacache(10000, 10) // 10000 лотов, 10 покупок на пользователя
+	// Initialize local cache with 10000 lots and 10 purchases per user / Инициализация локального кеша с 10000 лотов и 10 покупок на пользователя
+	instance.cache = megacache.NewMegacache(10000, 10)
 
+	// ===== CACHE RECOVERY FROM DATABASE =====
 	// ===== ВОССТАНОВЛЕНИЕ КЕША ИЗ БД =====
 	log.Println("🔄 Recovering cache from database...")
 
+	// Create context with timeout for cache recovery / Создание контекста с таймаутом для восстановления кеша
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Создаем сервис восстановления кеша
+	// Create cache recovery service / Создаем сервис восстановления кеша
 	recoveryService := db.NewCacheRecoveryService(instance.checkoutRepo, instance.saleItemsRepo)
 
-	// Восстанавливаем кеш с учетом проданных лотов
+	// Recover cache considering sold lots / Восстанавливаем кеш с учетом проданных лотов
 	if err := recoveryService.RecoverCacheWithSoldItems(ctx, instance.cache, instance.saleID); err != nil {
 		instance.cleanup()
 		return fmt.Errorf("failed to recover cache: %w", err)
@@ -122,10 +134,10 @@ func startNewServerInstance() error {
 
 	log.Println("✅ Cache recovery completed successfully")
 
-	// Устанавливаем флаг приема запросов
+	// Set flag to accept requests / Устанавливаем флаг приема запросов
 	atomic.StoreInt32(&instance.isAcceptingReqs, 1)
 
-	// Настройка HTTP сервера
+	// Setup HTTP server with routes / Настройка HTTP сервера
 	mux := http.NewServeMux()
 	mux.HandleFunc("/checkout", instance.checkoutHandler)
 	mux.HandleFunc("/purchase", instance.purchaseHandler)
@@ -135,18 +147,18 @@ func startNewServerInstance() error {
 		Handler: mux,
 	}
 
-	// Останавливаем предыдущий экземпляр и ждем его завершения
+	// Stop previous instance and wait for completion / Останавливаем предыдущий экземпляр и ждем его завершения
 	if oldInstance := getCurrentInstance(); oldInstance != nil {
 		log.Println("🔄 Stopping previous server instance...")
 		go oldInstance.gracefulShutdown()
-		// Ждем завершения старого сервера
+		// Wait for old server to complete shutdown / Ждем завершения старого сервера
 		<-oldInstance.shutdownComplete
 	}
 
-	// Устанавливаем новый текущий экземпляр
+	// Set new current instance / Устанавливаем новый текущий экземпляр
 	currentInstance.Store(instance)
 
-	// Запускаем HTTP сервер в отдельной горутине
+	// Start HTTP server in separate goroutine / Запускаем HTTP сервер в отдельной горутине
 	go func() {
 		log.Printf("🌐 Server starting on port 8080... Sale ID: %d", instance.saleID)
 		if err := instance.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -157,6 +169,7 @@ func startNewServerInstance() error {
 	return nil
 }
 
+// getCurrentInstance returns the current active server instance / возвращает текущий активный экземпляр сервера
 func getCurrentInstance() *ServerInstance {
 	if instance := currentInstance.Load(); instance != nil {
 		return instance.(*ServerInstance)
@@ -164,17 +177,18 @@ func getCurrentInstance() *ServerInstance {
 	return nil
 }
 
+// setupHourlyRestart configures automatic hourly server restarts / настраивает автоматические ежечасные перезапуски сервера
 func setupHourlyRestart() {
 	go func() {
-		// Вычисляем время до следующего часа
+		// Calculate time until next hour / Вычисляем время до следующего часа
 		now := time.Now()
 		nextHour := now.Truncate(time.Hour).Add(time.Hour)
-		//nextHour := now.Truncate(time.Minute).Add(time.Minute)
+		//nextHour := now.Truncate(time.Minute).Add(time.Minute) // For testing: restart every minute / Для тестирования: перезапуск каждую минуту
 		timeUntilNextHour := nextHour.Sub(now)
 
 		log.Printf("⏰ Next restart scheduled at: %s (in %v)", nextHour.Format("15:04:05"), timeUntilNextHour)
 
-		// Первый таймер до следующего часа
+		// First timer until next hour / Первый таймер до следующего часа
 		timer := time.NewTimer(timeUntilNextHour)
 
 		for {
@@ -182,28 +196,29 @@ func setupHourlyRestart() {
 
 			log.Println("🔄 Hourly restart triggered")
 
-			// Запускаем новый экземпляр сервера
+			// Start new server instance / Запускаем новый экземпляр сервера
 			if err := startNewServerInstance(); err != nil {
 				log.Printf("❌ Failed to restart server: %v", err)
 			}
 
-			// Устанавливаем таймер на следующий час
+			// Set timer for next hour / Устанавливаем таймер на следующий час
 			timer.Reset(time.Hour)
-			//timer.Reset(time.Minute)
+			//timer.Reset(time.Minute) // For testing: restart every minute / Для тестирования: перезапуск каждую минуту
 		}
 	}()
 }
 
+// gracefulShutdown performs graceful shutdown of the server instance / выполняет корректное завершение работы экземпляра сервера
 func (s *ServerInstance) gracefulShutdown() {
 	log.Println("🛑 Starting graceful shutdown of server instance...")
 
-	// Прекращаем прием новых запросов
+	// Stop accepting new requests / Прекращаем прием новых запросов
 	atomic.StoreInt32(&s.isAcceptingReqs, 0)
 
-	// Даем время на завершение текущих запросов
+	// Give time for current requests to complete / Даем время на завершение текущих запросов
 	time.Sleep(500 * time.Millisecond)
 
-	// Останавливаем HTTP сервер
+	// Stop HTTP server with timeout /  Останавливаем HTTP сервер
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
@@ -212,13 +227,14 @@ func (s *ServerInstance) gracefulShutdown() {
 		s.httpServer.Close()
 	}
 
-	// Очищаем ресурсы
+	// Clean up resources / Очищаем ресурсы
 	s.cleanup()
 
 	close(s.shutdownComplete)
 	log.Println("✅ Server instance shutdown complete")
 }
 
+// cleanup releases all resources used by the server instance / освобождает все ресурсы, используемые экземпляром сервера
 func (s *ServerInstance) cleanup() {
 	if s.cache != nil {
 		s.cache.Close()
@@ -241,23 +257,26 @@ func (s *ServerInstance) cleanup() {
 	}
 }
 
+// isAcceptingRequests checks if the server instance is accepting new requests / проверяет, принимает ли экземпляр сервера новые запросы
 func (s *ServerInstance) isAcceptingRequests() bool {
 	return atomic.LoadInt32(&s.isAcceptingReqs) == 1
 }
 
+// checkoutHandler handles POST requests to reserve items for users / обрабатывает POST запросы для резервирования товаров пользователями
 func (s *ServerInstance) checkoutHandler(w http.ResponseWriter, r *http.Request) {
-	// Проверяем, принимаем ли мы запросы
+	// Check if we're accepting requests / Проверяем, принимаем ли мы запросы
 	if !s.isAcceptingRequests() {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	// Этап 0: валидация запроса
+	// Stage 0: Request validation / валидация запроса
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Parse query parameters / Парсинг параметров запроса
 	queryParams, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -267,28 +286,26 @@ func (s *ServerInstance) checkoutHandler(w http.ResponseWriter, r *http.Request)
 	userIDStr := queryParams.Get("user_id")
 	itemIDStr := queryParams.Get("item_id")
 
-	// Преобразование userID в int64
 	userID, err := strconv.ParseInt(userIDStr, 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Преобразование itemID в int64
 	itemID, err := strconv.ParseInt(itemIDStr, 10, 64)
 	if err != nil || itemID < 0 || itemID >= 10_000 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Этап 1: резервирование в локальном кеше
+	// Stage 1: Reserve in local cache / резервирование в локальном кеше
 	checkout, err := s.cache.Checkout(userID, itemID)
 	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
-	// Этап 2: сохранение резервирования в БД
+	// Stage 2: Save reservation to database / сохранение резервирования в БД
 	record := db.CheckoutRecord{
 		UserID:    userID,
 		ItemID:    itemID,
@@ -297,30 +314,34 @@ func (s *ServerInstance) checkoutHandler(w http.ResponseWriter, r *http.Request)
 		ExpiresAt: checkout.ExpiresAt,
 	}
 
+	// Add to batch inserter, rollback cache on failure / Добавление в пакетную вставку, откат кеша при ошибке
 	if err := s.batchInserter.Add(record); err != nil {
 		s.cache.DeleteCheckout(checkout.Code)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// Return checkout code to client / Возвращаем код checkout клиенту
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "%s", checkout.Code)
 }
 
+// purchaseHandler handles POST requests to complete purchases using checkout codes / обрабатывает POST запросы для завершения покупок с использованием кодов checkout
 func (s *ServerInstance) purchaseHandler(w http.ResponseWriter, r *http.Request) {
-	// Проверяем, принимаем ли мы запросы
+	// Check if we're accepting requests / Проверяем, принимаем ли мы запросы
 	if !s.isAcceptingRequests() {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 
-	// Этап 0: валидация запроса
+	// Stage 0: Request validation / Этап 0: валидация запроса
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Parse query parameters / Парсинг параметров запроса
 	queryParams, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -329,30 +350,30 @@ func (s *ServerInstance) purchaseHandler(w http.ResponseWriter, r *http.Request)
 
 	codeStr := queryParams.Get("code")
 
-	// Парсим строку в UUID
+	// Parse string to UUID / Парсим строку в UUID
 	code, err := uuid.Parse(codeStr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Этап 1: попытка покупки в кеше
+	// Stage 1: Attempt purchase in cache / попытка покупки в кеше
 	checkout, success := s.cache.TryPurchase(code)
 	if !success {
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
-	// Этап 2: попытка покупки в БД
+	// Stage 2: Attempt purchase in database / попытка покупки в БД
 	err = s.batchPurchase.Purchase(s.saleID, checkout.LotIndex, checkout.UserID)
 	if err != nil {
-		// откат покупки в кеше
+		// Rollback purchase in cache on database failure / откат покупки в кеше
 		s.cache.RollbackPurchase(code)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// Этап 3: закрываем покупку в кеше
+	// Stage 3: Confirm purchase in cache / закрываем покупку в кеше
 	s.cache.ConfirmPurchase(code)
 
 	w.WriteHeader(http.StatusOK)
